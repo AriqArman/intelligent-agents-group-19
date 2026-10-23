@@ -5,7 +5,7 @@ Coursework repo for **COMP6203 Intelligent Agents** (University of Southampton, 
 
 | | |
 |---|---|
-| Agent file | `group19.py` |
+| Agent file | [`group19.py`](group19.py) |
 | Agent class | `Company19` (must inherit `TradingCompany`) |
 | Coursework weight | 40% of module |
 | Contact | Keniel Peart (k.peart@soton.ac.uk) |
@@ -13,6 +13,7 @@ Coursework repo for **COMP6203 Intelligent Agents** (University of Southampton, 
 ## Contents
 - [Overview](#overview)
 - [MABLE](#mable)
+- [Submission](#submission)
 - [Tournament rules](#tournament-rules)
 - [Report requirements](#report-requirements)
 - [Assessment and tests](#assessment-and-tests)
@@ -23,18 +24,55 @@ Coursework repo for **COMP6203 Intelligent Agents** (University of Southampton, 
 Build a software agent that runs a tramp-trade shipping company. Tramp vessels have no fixed schedule and trade on a spot market for immediate delivery. Cargo auctions are held regularly; each company bids the price it would accept to be paid to transport a cargo, then must deliver the contracts it wins.
 
 Deliverables (submitted separately):
-1. **Agent**: `group19.py` containing class `Company19`, inheriting `TradingCompany`. Start from the provided template and example implementation; the example also lets you run your own local tournaments (see Lab 4).
+1. **Agent**: [`group19.py`](group19.py) containing class `Company19`, inheriting `TradingCompany`. It currently holds the provided template; the example implementation also lets you run your own local tournaments (see Lab 4).
 2. **Group report**: research-paper-style analysis of the agent (see [Report requirements](#report-requirements)).
 
 Rules on reuse:
-- Ideas from existing work (e.g. the AAMAS'25 competition and its winners' report) are allowed **if referenced** in the report.
+- Ideas from existing work are allowed **if referenced** in the report. A similar tournament ran at AAMAS'25: [competition website](https://jbuerman.github.io/Maritime-Shipping-Competition-AAMAS2025/). Reports from the top teams:
+  - 1st: [Fast Scheduling and Robust Pricing](docs/aamas25/1st-place-delft.pdf) (Mai, Ou; TU Delft)
+  - 2nd: [Team Oil Spill MABLE Competition Agent](docs/aamas25/2nd-place-oil-spill.pdf) (Gaskins, Brue; University of Tulsa)
+  - 3rd: [Optimizing Vessel Scheduling and Trade Bidding with Simulated Annealing](docs/aamas25/3rd-place-simulated-annealing.pdf) (Flavin; University of Tulsa)
 - **No code from existing implementations.** Agent must be entirely our own work; code from the labs is allowed.
 - Extra Python packages need approval from Keniel Peart so they can be installed on the tournament machine.
 
 ## MABLE
 MABLE is an agent-based maritime cargo transportation simulator in Python. A setting defines ports, a cargo market with one homogeneous continuous cargo (e.g. oil), and shipping companies. When run, the simulator generates random cargo transport opportunities that companies bid for and then must carry from one port to another.
 
-For the coursework the world (ports, cargo market) is already specified; we only define the shipping company's behaviour. Installation and usage are covered in the weekly labs and the module's setup guide.
+For the coursework the world (ports, cargo market) is already specified; we only define the shipping company's behaviour.
+
+### Setup
+Full instructions: [lab sheet](docs/COMP6203_Lab_Sheet.pdf), Lab 1, section 1.2.3.
+
+1. Python **3.11 or newer** ([download guide](https://wiki.python.org/moin/BeginnersGuide/Download)).
+2. `pip install mable` ([PyPI](https://pypi.org/project/mable/)).
+   - If that fails, download the wheel `mable-0.0.13.post3-py3-none-any.whl` from [PyPI files](https://pypi.org/project/mable/#files) and run `pip install mable-0.0.13.post3-py3-none-any.whl`.
+   - If you get `Field.__init__() got an unexpected keyword argument 'default'`, install the [fixed MABLE wheel](https://sotonac-my.sharepoint.com/:u:/g/personal/jln1g19_soton_ac_uk/EfaYHnHzHXFNni0FZikQ1_wB2mgReW4hHIXFOHbV07WOEw?e=0JIemi) instead.
+3. Download [`mable_resources.zip`](https://sotonac-my.sharepoint.com/:u:/g/personal/jln1g19_soton_ac_uk/EeNREwaADQZLrfizEUxG-ZQBnGdjNrkJD_jKqKrUCl0M2g?e=7dPFF2) ([alternate](https://github.com/jbuerman/Maritime-Shipping-Competition-AAMAS2025/raw/main/files/mable_resources.zip)) and put it, still zipped, in the working directory.
+
+Docs: [MABLE API](https://mable-doc.netlify.app/) · [default `TradingCompany` implementation](https://mable-doc.netlify.app/tradingagentintroduction#default-implementation) · [source](https://github.com/jbuerman/mable)
+
+### Running
+A minimal run with the agent (lab sheet, section 1.3):
+
+```python
+from mable.examples import environment, fleets
+from group19 import Company19
+
+if __name__ == '__main__':
+    specifications_builder = environment.get_specification_builder(environment_files_path=".")
+    fleet = fleets.example_fleet_1()
+    specifications_builder.add_company(Company19.Data(Company19, fleet, "Group 19"))
+    sim = environment.generate_simulation(specifications_builder)
+    sim.run()
+```
+
+The run writes `metrics_competition_<number>.json`. Summarise income with `mable overview metrics_competition_<number>.json`.
+
+## Submission
+Agent and report are submitted separately, via links on the module page. **Submission links are not posted yet.**
+
+- Agent: `group19.py` with class `Company19`.
+- Report: PDF, see [Report requirements](#report-requirements).
 
 ## Tournament rules
 - Each competition: every agent gets a fleet and runs **one year** of shipping operations.
