@@ -133,10 +133,11 @@ class Company19(TradingCompany):
     def free_vessels(self):
         """Vessels with no committed work, the only ones given new trades.
 
-        Replacing the schedule of a vessel that is already executing one makes
-        MABLE restart its current leg with a shortened duration but the full
-        distance, so the leg is charged at an absurd speed (fuel grows ~speed^3).
-        Observed locally: one 5,000 nm leg charged ~15,000 fuel instead of ~700.
+        Observed locally: after re-applying a schedule to a vessel that already
+        had committed work, one leg (Qingdao -> March Point) was logged as a
+        59.8 h journey and charged 15,214 fuel, far above any other leg in the run
+        (fuel grows steeply with the implied speed). Only touching vessels with
+        empty schedules removed every such spike. Root cause not confirmed.
         """
         return [v for v in self.fleet if len(v.schedule) == 0]
 
