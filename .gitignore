@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+
+# MABLE resources (extracted from mable_resources.zip at run time)
+mable_resources.zip
+*.pickle
+*.pkl
+ports.csv
+port_cargo_weight_distribution.csv
+port_trade_frequency_distribution.csv
+time_transition_distribution.csv
+
+# Run outputs
+metrics_competition_*.json
+runs/*.json
+runs/*.log
