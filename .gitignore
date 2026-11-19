@@ -1,0 +1,10 @@
+mable_resources.zip
+docs
+.venv
+outputs
+port_cargo_weight_distribution.csv
+port_trade_frequency_distribution.csv
+ports.csv
+time_transition_distribution.csv
+routing_graph_world_mask.pkl
+precomputed_routes.pickle
