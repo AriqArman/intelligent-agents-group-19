@@ -51,6 +51,9 @@ class Company19(TradingCompany):
     WINDOW_SLACK = 1.0
     MAX_VERIFY = 3
     max_verify = MAX_VERIFY  # receive() lifts this to "all" when a won trade does not fit
+    # Debugging only: a file path to write a per-auction trace of bids and outcomes
+    # (open it in the Agent Lens page). None = no trace, as in the tournament.
+    TRACE_PATH = None
 
     # ------------------------------------------------------------------ market
 
@@ -59,16 +62,22 @@ class Company19(TradingCompany):
         # The joint plan picks a bid set that can all be delivered together.
         proposal = self.propose_schedules(trades, deadline=start + self.TIME_BUDGET)
         bids = []
+        standalone = {}
         for trade in proposal.scheduled_trades:
             cost = proposal.costs[trade]
             # In the joint plan a trade may look cheap only because it rides on
             # another trade we might not win; price it at the dearer of the two views.
             if time.monotonic() - start < self.TIME_BUDGET + self.STANDALONE_BUDGET:
-                cost = max(cost, self.standalone_cost(trade))
+                standalone[trade] = self.standalone_cost(trade)
+                cost = max(cost, standalone[trade])
             bids.append(Bid(amount=cost * (1 + self.MARGIN), trade=trade))
+        if self.TRACE_PATH:
+            self._trace_inform(trades, proposal, standalone, bids, time.monotonic() - start)
         return bids
 
     def receive(self, contracts, auction_ledger=None, *args, **kwargs):
+        if self.TRACE_PATH:
+            self._trace_receive(contracts, auction_ledger)
         won = [c.trade for c in contracts]
         deadline = time.monotonic() + self.RECEIVE_BUDGET
         proposal = self.propose_schedules(won, deadline=deadline)
@@ -237,3 +246,54 @@ class Company19(TradingCompany):
             active += travel_time + handling_time
             location = port
         return vessel.get_cost(fuel), active, plausible
+
+    # ------------------------------------------------------------ debug trace
+    # Writes TRACE_PATH (JSON) after every auction. Read it with the Agent Lens page.
+
+    @staticmethod
+    def _trade_key(trade):
+        return f"{trade.origin_port.name}|{trade.destination_port.name}|{trade.amount:.1f}|{trade.time}"
+
+    @staticmethod
+    def _port(port):
+        return {"name": port.name.rsplit("-", 1)[0], "lat": port.latitude, "lon": port.longitude}
+
+    def _trace_inform(self, trades, proposal, standalone, bids, seconds):
+        vessel_of = {id(t): v.name for v, s in proposal.schedules.items() for t in s.get_scheduled_trades()}
+        bid_of = {id(b.trade): b.amount for b in bids}
+        free = {v.name for v in self.free_vessels()}
+        vessels = []
+        for v in self.fleet:
+            loc = v.location.destination if isinstance(v.location, OnJourney) else v.location
+            vessels.append({"name": v.name, "free": v.name in free, "capacity": v.capacity("Oil"),
+                            "at": self._port(loc) if hasattr(loc, "latitude") else None})
+        rows = []
+        for t in trades:
+            rows.append({
+                "key": self._trade_key(t), "origin": self._port(t.origin_port),
+                "destination": self._port(t.destination_port), "amount": t.amount,
+                "window": list(t.time_window),
+                "joint_cost": proposal.costs.get(t), "standalone_cost": standalone.get(t),
+                "bid": bid_of.get(id(t)), "vessel": vessel_of.get(id(t)),
+            })
+        if not hasattr(self, "_trace"):
+            self._trace = {"company": self.name, "margin": self.MARGIN, "auctions": []}
+        self._trace["auctions"].append({
+            "time": self.headquarters.current_time, "seconds": round(seconds, 3),
+            "vessels": vessels, "trades": rows, "won": [], "others": []})
+
+    def _trace_receive(self, contracts, auction_ledger):
+        import json
+        if not getattr(self, "_trace", None) or not self._trace["auctions"]:
+            return
+        auction = self._trace["auctions"][-1]
+        auction["won"] = [{"key": self._trade_key(c.trade), "payment": c.payment} for c in contracts]
+        ledger = getattr(auction_ledger, "ledger", auction_ledger) or {}
+        for company, company_contracts in ledger.items():
+            name = getattr(company, "name", company)
+            if name == self.name:
+                continue
+            auction["others"] += [{"company": name, "key": self._trade_key(c.trade), "payment": c.payment}
+                                  for c in company_contracts]
+        with open(self.TRACE_PATH, "w") as f:
+            json.dump(self._trace, f)

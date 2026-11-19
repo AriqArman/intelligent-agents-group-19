@@ -47,3 +47,8 @@ Setup: 12 monthly auctions against MABLE's `MyArchEnemy` and `TheScheduler`, all
   - Tune the margin per fleet size and market size.
   - Model opponents from `auction_ledger`: their winning bids show how far above cost we can go.
   - Use `pre_inform` (next month's trades) to discount trades that end near future pick-ups.
+
+## Seeing a run
+`tools/agent-lens.html` explains how the agent works, lists the build steps, and charts a run. Open it in a browser, or use the published copy. Load the `runs/trace_*.json` that `run_local.py` writes (via `TRACE_PATH`) and the matching `metrics_competition_*.json`.
+
+Sample finding (15 trades, 4 ships, m=0.4): 28 of 33 wins had no rival bid, so MABLE paid our own bid. That is why higher margins raised income in the sweep.

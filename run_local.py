@@ -3,6 +3,7 @@ Local competitive run: Company19 vs MABLE's example agents over 12 monthly aucti
 
 Usage:  python run_local.py [margin] [trades_per_auction] [fleet_size]   (margin < 0 = never bid)
 Then:   mable overview metrics_competition_<id>.json
+Also writes runs/trace_*.json (our bids per auction) for the Agent Lens page.
 """
 import sys
 
@@ -15,7 +16,8 @@ if __name__ == '__main__':
     trades_per_auction = int(sys.argv[2]) if len(sys.argv) > 2 else 5
     fleet_size = int(sys.argv[3]) if len(sys.argv) > 3 else 2
 
-    attrs = {"MARGIN": margin}
+    trace = f"runs/trace_t{trades_per_auction}_v{fleet_size}_m{margin}.json"
+    attrs = {"MARGIN": margin, "TRACE_PATH": trace}
     if margin < 0:  # baseline: never bid, so the company only pays idle fuel
         attrs["inform"] = lambda self, trades, *a, **k: []
     Tuned = type("Company19", (Company19,), attrs)
