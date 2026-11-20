@@ -44,9 +44,9 @@ For the coursework the world (ports, cargo market) is already specified; we only
 Full instructions: [lab sheet](docs/COMP6203_Lab_Sheet.pdf), Lab 1, section 1.2.3.
 
 1. Python **3.11 or newer** ([download guide](https://wiki.python.org/moin/BeginnersGuide/Download)).
-2. `pip install mable` ([PyPI](https://pypi.org/project/mable/)).
+2. `pip install -r requirements.txt` (installs `mable` from [PyPI](https://pypi.org/project/mable/) and pins `marshmallow<4`).
    - If that fails, download the wheel `mable-0.0.13.post3-py3-none-any.whl` from [PyPI files](https://pypi.org/project/mable/#files) and run `pip install mable-0.0.13.post3-py3-none-any.whl`.
-   - If you get `Field.__init__() got an unexpected keyword argument 'default'`, install the [fixed MABLE wheel](https://sotonac-my.sharepoint.com/:u:/g/personal/jln1g19_soton_ac_uk/EfaYHnHzHXFNni0FZikQ1_wB2mgReW4hHIXFOHbV07WOEw?e=0JIemi) instead.
+   - If you get `Field.__init__() got an unexpected keyword argument 'default'`, run `pip install "marshmallow<4"` (marshmallow 4 removed that argument). Alternatively, install the [fixed MABLE wheel](https://sotonac-my.sharepoint.com/:u:/g/personal/jln1g19_soton_ac_uk/EfaYHnHzHXFNni0FZikQ1_wB2mgReW4hHIXFOHbV07WOEw?e=0JIemi) instead.
 3. Download [`mable_resources.zip`](https://sotonac-my.sharepoint.com/:u:/g/personal/jln1g19_soton_ac_uk/EeNREwaADQZLrfizEUxG-ZQBnGdjNrkJD_jKqKrUCl0M2g?e=7dPFF2) ([alternate](https://github.com/jbuerman/Maritime-Shipping-Competition-AAMAS2025/raw/main/files/mable_resources.zip)) and put it, still zipped, in the working directory.
 
 Docs: [MABLE API](https://mable-doc.netlify.app/) · [default `TradingCompany` implementation](https://mable-doc.netlify.app/tradingagentintroduction#default-implementation) · [source](https://github.com/jbuerman/mable)

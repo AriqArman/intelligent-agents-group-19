@@ -1,0 +1,3 @@
+mable==0.0.13.post3
+# MABLE uses fields.Str(default=...), which marshmallow 4 removed
+marshmallow<4
