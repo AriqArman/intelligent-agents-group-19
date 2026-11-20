@@ -4,14 +4,32 @@ import inspect
 
 from mable.cargo_bidding import TradingCompany
 from mable.examples import environment, fleets
-from mable.transport_operation import ScheduleProposal
+from mable.transport_operation import ScheduleProposal, Bid
 
 
 class Company19(TradingCompany):
-
+    
     # Could be overriden but isn't necessary at this time
     def pre_inform(self, trades, time):
         pass
+
+    MAX_BIDS = 1
+
+    def inform(self, trades, *args, **kwargs):
+        proposal = self.propose_schedules(trades)
+        self._estimates = getattr(self, "_estimates", {})
+        self._n_bids = getattr(self, "_n_bids", 0)
+        bids = []
+
+        for trade in proposal.scheduled_trades:
+            if self._n_bids >= self.MAX_BIDS:
+                break
+            cost = proposal.costs.get(trade, 0)
+            self._estimates[trade] = cost
+            self._n_bids += 1
+            print(f"[bid] {trade}: estimate {cost:.2f}")
+            bids.append(Bid(amount=cost, trade=trade))
+        return bids
     
     # Used to create possible schedules
     # Pre-scheduling part
@@ -74,6 +92,11 @@ class Company19(TradingCompany):
         travel_time = vessel.get_travel_time(travel_distance)
         travel_cost = vessel.get_laden_consumption(travel_time, vessel.speed)
         cost = ballast_cost + loading_costs + unloading_costs + travel_cost
+        
+        print(f"  start={start_port} ({type(start_port).__name__}) origin={trade.origin_port} dest={trade.destination_port}")
+        print(f"  ballast={ballast_cost:.2f} loading={loading_costs:.2f} "
+              f"unloading={unloading_costs:.2f} laden={travel_cost:.2f} total={cost:.2f}")
+        
         return cost
 
     # Gets the last port of a given schedule
@@ -91,10 +114,51 @@ class Company19(TradingCompany):
 
 if __name__ == '__main__':
     os.makedirs("outputs", exist_ok=True)
-    print(inspect.getsource(TradingCompany.inform))
+    # print(inspect.getsource(TradingCompany.inform))
 
     specifications_builder = environment.get_specification_builder(environment_files_path=".")
     fleet = fleets.example_fleet_1()
     specifications_builder.add_company(Company19.Data(Company19, fleet, "Company 19"))
     sim = environment.generate_simulation(specifications_builder, output_directory="outputs")
     sim.run()
+
+
+# Attempt 1:
+""" start=Port<Aberdeen-f8ea5ddd09c3 (57.14151, -2.07729)> (LatLongPort) origin=Port<Port Said-73e707725c62 (31.25094, 32.30507)> dest=Port<Tanjung Pelepas-71ae886ba35d (1.34033, 103.54542)>
+ballast=745.68 loading=8.87 unloading=76.77 laden=2708.43 total=3539.75
+[propose] 1 trades in, 1 scheduled
+[bid] TimeWindowTrade(origin_port=Port<Port Said-73e707725c62 (31.25094, 32.30507)>, destination_port=Port<Tanjung Pelepas-71ae886ba35d (1.34033, 103.54542)>, amount=68561.73410929955, cargo_type='Oil', time=1440, probability=1, status=<TradeStatus.UNKNOWN: 1>, time_window=[1776, 2016, 2208, 2448]): estimate 3539.75
+[receive] won 1 contracts
+start=Port<Aberdeen-f8ea5ddd09c3 (57.14151, -2.07729)> (LatLongPort) origin=Port<Port Said-73e707725c62 (31.25094, 32.30507)> dest=Port<Tanjung Pelepas-71ae886ba35d (1.34033, 103.54542)>
+ballast=745.68 loading=8.87 unloading=76.77 laden=2708.43 total=3539.75
+[propose] 1 trades in, 1 scheduled """
+""" +---------+----------+
+|   Name  |    Value |
++---------+----------+
+|   Cost  | 4007.075 |
+| Penalty |        0 |
+| Revenue |  3539.75 |
++---------+----------+
+|  Income | -467.325 |
++---------+----------+ """
+
+
+# Attempt 2 - skip first auction
+""" start=Port<Aberdeen-f8ea5ddd09c3 (57.14151, -2.07729)> (LatLongPort) origin=Port<Port Said-73e707725c62 (31.25094, 32.30507)> dest=Port<Tanjung Pelepas-71ae886ba35d (1.34033, 103.54542)>
+  ballast=745.68 loading=8.87 unloading=76.77 laden=2708.43 total=3539.75
+[propose] 1 trades in, 1 scheduled
+[bid] TimeWindowTrade(origin_port=Port<Port Said-73e707725c62 (31.25094, 32.30507)>, destination_port=Port<Tanjung Pelepas-71ae886ba35d (1.34033, 103.54542)>, amount=68561.73410929955, cargo_type='Oil', time=1440, probability=1, status=<TradeStatus.UNKNOWN: 1>, time_window=[1776, 2016, 2208, 2448]): estimate 3539.75
+[receive] won 1 contracts
+  start=Port<Aberdeen-f8ea5ddd09c3 (57.14151, -2.07729)> (LatLongPort) origin=Port<Port Said-73e707725c62 (31.25094, 32.30507)> dest=Port<Tanjung Pelepas-71ae886ba35d (1.34033, 103.54542)>
+  ballast=745.68 loading=8.87 unloading=76.77 laden=2708.43 total=3539.75
+[propose] 1 trades in, 1 scheduled """
+
+""" +---------+----------+
+|   Name  |    Value |
++---------+----------+
+|   Cost  | 4007.075 |
+| Penalty |        0 |
+| Revenue |  3539.75 |
++---------+----------+
+|  Income | -467.325 |
++---------+----------+ """
