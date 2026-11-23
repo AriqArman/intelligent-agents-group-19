@@ -14,10 +14,14 @@ class Company19(TradingCompany):
     # Turns the costs from propose_schedules into bid amounts (cost + profit margin)
     # Should override for more complex bidding and pricing strategies
     def inform(self, trades, *args, **kwargs):
-        proposed_scheduling = self.propose_schedules(trades)
-        scheduled_trades = self.propose_scheduling.scheduled_trades
-        trades_and_costs = [(x, proposed_scheduling.costs[x]) if x in proposed_scheduling.costs else 0 for x in scheduled_trades]
-        bids = [Bid(amount=cost, trade=one_trade) for one_trade, cost in trades_and_costs]
+        proposed = self.propose_schedules(trades)
+        bids = []
+
+        for trade in proposed.scheduled_trades:
+            cost = proposed.costs.get(trade)
+            if cost is None:
+                continue
+            bids.append(Bid(amount=cost * 1.1, trade=trade))
         return bids
     
     # Used to create possible schedules
