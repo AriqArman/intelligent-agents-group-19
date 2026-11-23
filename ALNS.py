@@ -13,8 +13,6 @@ class Company19(TradingCompany):
     def pre_inform(self, trades, time):
         pass
 
-    MAX_BIDS = 1
-
     def inform(self, trades, *args, **kwargs):
         proposal = self.propose_schedules(trades)
         self._estimates = getattr(self, "_estimates", {})
@@ -22,13 +20,11 @@ class Company19(TradingCompany):
         bids = []
 
         for trade in proposal.scheduled_trades:
-            if self._n_bids >= self.MAX_BIDS:
-                break
             cost = proposal.costs.get(trade, 0)
             self._estimates[trade] = cost
             self._n_bids += 1
             print(f"[bid] {trade}: estimate {cost:.2f}")
-            bids.append(Bid(amount=cost, trade=trade))
+            bids.append(Bid(amount=cost * 1.1, trade=trade))
         return bids
     
     # Used to create possible schedules

@@ -8,3 +8,4 @@ ports.csv
 time_transition_distribution.csv
 routing_graph_world_mask.pkl
 precomputed_routes.pickle
+test_outputs
