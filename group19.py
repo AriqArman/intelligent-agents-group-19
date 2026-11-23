@@ -51,3 +51,4 @@ if __name__ == '__main__':
     specifications_builder.add_company(Company19.Data(Company19, fleet, "Company 19"))
     sim = environment.generate_simulation(specifications_builder, output_directory="outputs")
     sim.run()
+
