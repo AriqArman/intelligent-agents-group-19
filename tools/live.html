@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Live</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f3ef; --surface: #fcfcfb; --line: #e3e1da; --grid: #ecebe5;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8983;
+  --us: #2a78d6; --r1: #eb6834; --r2: #1baf7a;
+  --good: #0f7b3e; --good-bg: #e6f4ea; --bad: #b42318; --bad-bg: #fdecea; --warn-bg: #fff6e0;
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --line: #2e2d2b; --grid: #262523;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
+    --us: #3987e5; --r1: #d95926; --r2: #199e70;
+    --good: #5fd38d; --good-bg: #13291c; --bad: #ff8a80; --bad-bg: #331616; --warn-bg: #2d2610;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --line: #2e2d2b; --grid: #262523;
+  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
+  --us: #3987e5; --r1: #d95926; --r2: #199e70;
+  --good: #5fd38d; --good-bg: #13291c; --bad: #ff8a80; --bad-bg: #331616; --warn-bg: #2d2610;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, "Segoe UI", sans-serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 14px; }
+h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 13px; margin: 0 0 10px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+button { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--us); border-color: var(--us); color: #fff; font-weight: 600; }
+button:disabled { opacity: .5; cursor: default; }
+label.toggle { display: inline-flex; gap: 6px; align-items: center; color: var(--ink-2); cursor: pointer; }
+.pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--grid); color: var(--ink-2); }
+.pill.run { background: var(--warn-bg); color: var(--ink); }
+.pill.ok { background: var(--good-bg); color: var(--good); }
+.pill.err { background: var(--bad-bg); color: var(--bad); }
+.spacer { flex: 1; }
+.file { color: var(--ink-3); font-size: 12px; font-family: var(--mono); }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+.s12 { grid-column: span 12; } .s7 { grid-column: span 7; } .s5 { grid-column: span 5; } .s6 { grid-column: span 6; }
+@media (max-width: 860px) { .s7, .s5, .s6 { grid-column: span 12; } }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 12px; }
+.kpi .label { color: var(--ink-2); font-size: 12px; }
+.kpi .value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kpi .sub { color: var(--ink-3); font-size: 12px; }
+.kpi.bad .value { color: var(--bad); }
+.problems { background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+.problems h2 { color: var(--bad); }
+.problems pre { margin: 0; max-height: 220px; overflow: auto; font: 12px/1.4 var(--mono); white-space: pre-wrap; }
+.hint { background: var(--warn-bg); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+pre.console { margin: 0; height: 260px; overflow: auto; font: 12px/1.45 var(--mono); background: var(--bg); border-radius: 8px; padding: 10px; white-space: pre-wrap; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--ink-2); font-size: 11px; font-family: system-ui, sans-serif; }
+svg .axis { stroke: var(--line); } svg .gridline { stroke: var(--grid); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-2); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; }
+.tablewrap { max-height: 320px; overflow: auto; }
+.yes { color: var(--good); font-weight: 600; } .no { color: var(--bad); font-weight: 600; }
+.empty { color: var(--ink-3); padding: 20px 0; text-align: center; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--surface); padding: 6px 9px; border-radius: 6px; font-size: 12px; line-height: 1.35; opacity: 0; transition: opacity .08s; z-index: 10; max-width: 280px; }
+.hit { fill: transparent; }
+.hit:hover + .mark, .mark:hover { opacity: .8; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Agent Live</h1>
+    <span id="status" class="pill">connecting…</span>
+    <button id="run" class="primary" data-script="run_mine.py">Run my_agent.py</button>
+    <button id="runfull" data-script="run_local.py" title="group19.py vs both example rivals, 12 months (slower)">Run group19.py</button>
+    <label class="toggle"><input type="checkbox" id="auto"> Re-run when I save my_agent.py</label>
+    <span class="spacer"></span>
+    <span id="file" class="file"></span>
+  </header>
+
+  <div id="hint" class="hint" hidden></div>
+  <div id="problems" class="problems" hidden><h2>Errors and warnings</h2><pre id="problemtext"></pre></div>
+
+  <div id="kpis" class="kpis"></div>
+
+  <div class="grid">
+    <section class="card s5"><h2>Income by company</h2><div id="income"></div></section>
+    <section class="card s7"><h2>Trades won each month</h2><div id="months"></div></section>
+    <section class="card s7"><h2>Your print() output</h2><pre id="console" class="console"></pre></section>
+    <section class="card s5"><h2>Did my change help? (last runs)</h2><div id="history"></div></section>
+    <section class="card s12"><h2>Trades you won</h2><div id="trades" class="tablewrap"></div></section>
+  </div>
+</main>
+<div id="tip"></div>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => (n < 0 ? "−" : "") + Math.abs(Math.round(n)).toLocaleString("en-GB");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SERIES = ["var(--us)", "var(--r1)", "var(--r2)"];
+let last = "", consoleLen = -1;
+
+// colour follows the company: us = slot 1, rivals = slots 2, 3 in file order
+function colours(companies) {
+  const map = {}; let r = 1;
+  companies.forEach(c => { map[c.key] = c.ours ? SERIES[0] : SERIES[Math.min(r++, 2)]; });
+  return map;
+}
+
+// shared tooltip for anything with data-tip
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest("[data-tip]"), tip = $("tip");
+  if (!t) { tip.style.opacity = 0; return; }
+  tip.innerHTML = t.dataset.tip; tip.style.opacity = 1;
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px";
+});
+
+function incomeChart(companies, col) {
+  const W = 460, row = 34, H = companies.length * row + 24, L = 120, R = 70;
+  const vals = companies.map(c => c.income), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  const x = v => L + (v - lo) / ((hi - lo) || 1) * (W - L - R);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Income by company">`;
+  s += `<line class="axis" x1="${x(0)}" x2="${x(0)}" y1="0" y2="${H - 20}"/>`;
+  companies.forEach((c, i) => {
+    const y = i * row + 6, x0 = x(Math.min(0, c.income)), w = Math.max(2, Math.abs(x(c.income) - x(0)));
+    const tip = `<b>${esc(c.name)}</b><br>Revenue ${fmt(c.revenue)}<br>Fuel ${fmt(c.cost)}<br>Penalty ${fmt(c.penalty)}<br>Income <b>${fmt(c.income)}</b>`;
+    s += `<text x="${L - 8}" y="${y + 15}" text-anchor="end" style="font-weight:${c.ours ? 650 : 400};fill:var(--ink)">${esc(c.name.length > 18 ? c.name.slice(0, 17) + "…" : c.name)}</text>`;
+    s += `<rect class="mark" x="${x0}" y="${y + 3}" width="${w}" height="18" rx="4" fill="${col[c.key]}" data-tip="${esc(tip)}"/>`;
+    s += `<text x="${Math.max(x(c.income), x(0)) + 6}" y="${y + 16}" style="fill:var(--ink)">${fmt(c.income)}</text>`;
+  });
+  s += `<text x="${x(0)}" y="${H - 4}" text-anchor="middle">0</text></svg>`;
+  return s;
+}
+
+function monthChart(months, companies, col) {
+  if (!months.length) return `<div class="empty">No auctions yet.</div>`;
+  const W = 640, H = 220, L = 30, B = 26, T = 8, n = companies.length;
+  const max = Math.max(1, ...months.flatMap(m => companies.map(c => (m[c.key] || {}).won || 0)));
+  const step = (W - L) / months.length, bw = Math.min(18, (step - 10) / n - 2);
+  const y = v => H - B - v / max * (H - B - T);
+  let s = `<div class="legend">${companies.map(c => `<span><i style="background:${col[c.key]}"></i>${esc(c.name)}</span>`).join("")}</div>`;
+  s += `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Trades won per month">`;
+  for (let v = 0; v <= max; v += Math.max(1, Math.ceil(max / 4))) {
+    s += `<line class="gridline" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  }
+  months.forEach((m, i) => {
+    const gx = L + i * step + (step - n * (bw + 2)) / 2;
+    companies.forEach((c, j) => {
+      const d = m[c.key] || {won: 0, paid: 0}, h = Math.max(0, H - B - y(d.won));
+      const tip = `<b>Month ${i + 1}</b> · ${esc(c.name)}<br>Won ${d.won} trade${d.won === 1 ? "" : "s"}<br>Paid ${fmt(d.paid)}`;
+      const bx = gx + j * (bw + 2);
+      s += `<rect class="hit" x="${bx - 1}" y="${T}" width="${bw + 2}" height="${H - B - T}" data-tip="${esc(tip)}"/>`;
+      if (h > 0) s += `<path class="mark" fill="${col[c.key]}" data-tip="${esc(tip)}" d="M${bx},${H - B} v${-(h - 4)} q0,-4 4,-4 h${bw - 8} q4,0 4,4 v${h - 4} z"/>`;
+    });
+    s += `<text x="${L + i * step + step / 2}" y="${H - 8}" text-anchor="middle">${i + 1}</text>`;
+  });
+  return s + `<line class="axis" x1="${L}" x2="${W}" y1="${H - B}" y2="${H - B}"/></svg>`;
+}
+
+function historyChart(history) {
+  if (!history.length) return `<div class="empty">No runs yet.</div>`;
+  const W = 460, H = 220, L = 54, B = 26, T = 10;
+  const vals = history.map(h => h.income), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  const y = v => T + (hi - v) / ((hi - lo) || 1) * (H - B - T);
+  const step = (W - L) / history.length, bw = Math.min(22, step - 4);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Your income in recent runs">`;
+  [lo, 0, hi].filter((v, i, a) => a.indexOf(v) === i).forEach(v => {
+    s += `<line class="gridline" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  });
+  history.forEach((h, i) => {
+    const x = L + i * step + (step - bw) / 2, top = y(Math.max(0, h.income)), bot = y(Math.min(0, h.income));
+    const when = new Date(h.time * 1000).toLocaleTimeString("en-GB", {hour: "2-digit", minute: "2-digit"});
+    const tip = `<b>${esc(h.name)}</b> · ${when}<br>Your income <b>${fmt(h.income)}</b>` +
+      (h.best_rival !== null ? `<br>Best rival ${fmt(h.best_rival)}` : "") + (h.penalty ? `<br>Penalty ${fmt(h.penalty)}` : "");
+    const latest = i === history.length - 1;
+    s += `<rect class="hit" x="${x - 2}" y="${T}" width="${bw + 4}" height="${H - B - T}" data-tip="${esc(tip)}"/>`;
+    s += `<rect class="mark" x="${x}" y="${top}" width="${bw}" height="${Math.max(2, bot - top)}" rx="3" fill="var(--us)" opacity="${latest ? 1 : .45}" data-tip="${esc(tip)}"/>`;
+    if (h.best_rival !== null) s += `<line x1="${x - 2}" x2="${x + bw + 2}" y1="${y(h.best_rival)}" y2="${y(h.best_rival)}" stroke="var(--r1)" stroke-width="2"/>`;
+  });
+  s += `<line class="axis" x1="${L}" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>`;
+  s += `<text x="${W}" y="${H - 6}" text-anchor="end">newest →</text></svg>`;
+  return `<div class="legend"><span><i style="background:var(--us)"></i>Your income</span><span><i style="background:var(--r1);height:3px;vertical-align:3px"></i>Best rival</span></div>` + s;
+}
+
+function tradesTable(trades) {
+  if (!trades.length) return `<div class="empty">You haven't won any trades in this run.</div>`;
+  return `<table><thead><tr><th>Month</th><th>From</th><th>To</th><th class="num">Amount</th><th class="num">Paid</th><th>Delivered</th></tr></thead><tbody>` +
+    trades.map(t => `<tr><td>${t.month}</td><td>${esc(t.from)}</td><td>${esc(t.to)}</td><td class="num">${fmt(t.amount)}</td><td class="num">${fmt(t.payment)}</td><td class="${t.delivered ? "yes" : "no"}">${t.delivered ? "✓ yes" : "✗ no"}</td></tr>`).join("") +
+    `</tbody></table>`;
+}
+
+function render(d) {
+  const live = d.live, L = d.latest;
+  // status
+  const st = $("status");
+  if (live.running) { st.className = "pill run"; st.textContent = `running ${live.script} · ${live.elapsed}s`; }
+  else if (live.exit === null) { st.className = "pill"; st.textContent = "idle"; }
+  else if (live.exit === 0) { st.className = "pill ok"; st.textContent = `done in ${live.seconds}s`; }
+  else { st.className = "pill err"; st.textContent = `crashed (exit ${live.exit})`; }
+  $("run").disabled = $("runfull").disabled = live.running;
+  $("auto").checked = live.auto;
+  $("hint").hidden = live.agent_exists;
+  $("hint").innerHTML = "No <code>my_agent.py</code> yet. Create it (Step 1 of docs/notes/start-here.md), then press Run.";
+
+  // console (only touch the DOM when it changed, keep scroll pinned to bottom)
+  if (live.output.length !== consoleLen || live.running) {
+    const c = $("console"), pinned = c.scrollTop + c.clientHeight >= c.scrollHeight - 20;
+    c.textContent = live.output.length ? live.output.join("\n") : (live.running ? "waiting for output…" : "Nothing printed yet. Add print() calls in my_agent.py.");
+    if (pinned) c.scrollTop = c.scrollHeight;
+    consoleLen = live.output.length;
+  }
+  $("problems").hidden = !live.problems.length;
+  $("problemtext").textContent = live.problems.join("\n");
+
+  // results: re-render only when the metrics file or history changed
+  const key = JSON.stringify([L && L.file, d.history.length, d.history.map(h => h.file).join()]);
+  if (key === last) return;
+  last = key;
+  if (!L) { $("kpis").innerHTML = `<div class="card empty">No results yet. Press Run.</div>`; return; }
+  $("file").textContent = L.file;
+  const col = colours(L.companies), us = L.companies.find(c => c.ours);
+  const rivals = L.companies.filter(c => !c.ours), best = rivals.length ? Math.max(...rivals.map(c => c.income)) : null;
+  const tiles = [
+    {label: "Your income", value: fmt(us.income), sub: us.name, bad: us.income < 0},
+    {label: "vs best rival", value: best === null ? "–" : (us.income - best >= 0 ? "+" : "") + fmt(us.income - best), sub: best === null ? "no rivals" : (us.income >= best ? "you're ahead" : "you're behind"), bad: best !== null && us.income < best},
+    {label: "Revenue", value: fmt(us.revenue), sub: "money you were paid"},
+    {label: "Fuel cost", value: fmt(us.cost), sub: "includes idle fuel"},
+    {label: "Penalty", value: fmt(us.penalty), sub: us.penalty ? "trades not delivered!" : "must stay 0", bad: us.penalty > 0},
+    {label: "Trades won", value: us.won, sub: `${us.delivered} delivered`, bad: us.delivered < us.won},
+  ];
+  $("kpis").innerHTML = tiles.map(t => `<div class="card kpi${t.bad ? " bad" : ""}"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="sub">${esc(t.sub)}</div></div>`).join("");
+  $("income").innerHTML = incomeChart(L.companies, col);
+  $("months").innerHTML = monthChart(L.months, L.companies, col);
+  $("history").innerHTML = historyChart(d.history);
+  $("trades").innerHTML = tradesTable(L.trades);
+}
+
+async function poll() {
+  let wait = 2000;
+  try {
+    const d = await (await fetch("/api/state")).json();
+    render(d);
+    if (d.live.running) wait = 700;
+  } catch (e) {
+    $("status").className = "pill err"; $("status").textContent = "dashboard server stopped";
+  }
+  setTimeout(poll, wait);
+}
+const post = (path, body) => fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+document.querySelectorAll("button[data-script]").forEach(b => b.onclick = () => post("/api/run", {script: b.dataset.script}).then(() => setTimeout(poll, 200)));
+$("auto").onchange = e => post("/api/auto", {on: e.target.checked});
+poll();
+</script>
+</body>
+</html>

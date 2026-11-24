@@ -6,6 +6,8 @@ You write a practice agent in a new file, `my_agent.py`. Every step below has be
 .venv/Scripts/python run_mine.py
 ```
 
+**Live dashboard (recommended):** run `python tools/live.py` in a second terminal and leave it running. A browser page opens with a Run button, your `print()` output, income, penalty, trades won per month, and a "did my change help?" chart across runs. Tick "Re-run when I save my_agent.py" and it reruns every time you save. Errors, including ones MABLE hides, appear in a red box.
+
 `group19.py` (the finished agent) is not touched. Look at it only when you get stuck.
 
 ---
