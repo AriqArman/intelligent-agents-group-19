@@ -40,7 +40,13 @@ class Company19(TradingCompany):
                 continue
             
             vessel, schedule, cost = result
+            old_schedule = schedules.get(vessel, vessel.schedule)
+
             schedules[vessel] = schedule
+
+            delta = self.schedule_cost(vessel, schedule) - self.schedule_cost(vessel, old_schedule)
+            print(f"schedule_cost delta={delta:.2f}  marginal={cost:.2f}")
+            
             costs[current_trade] = cost
             scheduled_trades.append(current_trade)
 
@@ -65,6 +71,39 @@ class Company19(TradingCompany):
                     best = (vessel, new_schedule, cost)
 
         return best
+
+    # Returns the cost of an entire schedule
+    def schedule_cost(self, vessel, schedule):
+        stops = schedule.get_simple_schedule()
+        pos = vessel.location
+        total, active_time = 0.0, 0.0
+        onboard = 0
+
+        for kind, trade in stops:
+            target = trade.origin_port if kind == 'PICK_UP' else trade.destination_port
+
+            if pos != target:
+                distance = self.headquarters.get_network_distance(pos, target)
+                t = vessel.get_travel_time(distance)
+                if onboard > 0:
+                    total += vessel.get_laden_consumption(t, vessel.speed)
+                else:
+                    total += vessel.get_ballast_consumption(t, vessel.speed)
+                
+                active_time += t
+
+            load_time = vessel.get_loading_time(trade.cargo_type, trade.amount)
+            if kind == 'PICK_UP':
+                total += vessel.get_loading_consumption(load_time)
+                onboard += 1
+            else:
+                total += vessel.get_unloading_consumption(load_time)
+                onboard -= 1
+
+            active_time += load_time
+            pos = target
+
+        return total # - vessel.get_idle_consumption(active_time)
 
     # Calculates the cost of a vessel to carry out a specified trade given its current schedule
     def calculate_marginal_cost(self, vessel, schedule, trade):
