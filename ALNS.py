@@ -46,7 +46,7 @@ class Company19(TradingCompany):
 
             delta = self.schedule_cost(vessel, schedule) - self.schedule_cost(vessel, old_schedule)
             print(f"schedule_cost delta={delta:.2f}  marginal={cost:.2f}")
-            
+
             costs[current_trade] = cost
             scheduled_trades.append(current_trade)
 
@@ -55,20 +55,28 @@ class Company19(TradingCompany):
 
     # Finds and returns a vessel, schedule and cost for a given trade which has the lowest schedule cost
     def find_lowest_cost_schedule(self, current_trade, schedules):
-        lowest_cost = math.inf
+        lowest_delta = math.inf
         best = None
 
         for vessel in self._fleet:
             current_schedule = schedules.get(vessel, vessel.schedule)
-            new_schedule = current_schedule.copy()
-            new_schedule.add_transportation(current_trade)
+            old_cost = self.schedule_cost(vessel, current_schedule)
+            insertion_points = current_schedule.get_insertion_points()
 
-            if new_schedule.verify_schedule():
-                cost = self.calculate_marginal_cost(vessel, current_schedule, current_trade)
+            for k in range(len(insertion_points)):
+                idx_pick_up = insertion_points[k]
 
-                if cost < lowest_cost:
-                    lowest_cost = cost
-                    best = (vessel, new_schedule, cost)
+                for idx_drop_off in insertion_points[k:]:
+                    candidate = current_schedule.copy()
+                    candidate.add_transportation(current_trade, idx_pick_up, idx_drop_off)
+
+                    if not candidate.verify_schedule():
+                        continue
+
+                    delta = self.schedule_cost(vessel, candidate) - old_cost
+                    if delta < lowest_delta:
+                        lowest_delta = delta
+                        best = (vessel, candidate, delta)
 
         return best
 
