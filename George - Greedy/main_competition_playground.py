@@ -1,6 +1,13 @@
+import sys
+
+from loguru import logger
 from mable.examples import environment, fleets, companies
 
 import greedy
+
+# Removes most of the annoying DEBUG messages
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 def build_specification():
     number_of_month = 12
